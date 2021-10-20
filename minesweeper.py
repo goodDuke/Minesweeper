@@ -258,9 +258,11 @@ class MinesweeperAI():
             for sentence1 in self.knowledge:
                 # ...compare with every sentence in knowledge...
                 for sentence2 in self.knowledge:
-                    # ...that isn't itself
+                    # ...that isn't itself and the length of the sentences is greater than 0
                     if sentence1.cells != sentence2.cells and len(sentence1.cells) != 0 and len(sentence2.cells) != 0:
                         remove_set = set()
+                        # Check which sentence is a subset of the other
+                        # Then save the changes that must be made to a temporary set
                         if sentence1.cells.issubset(sentence2.cells):
                             for cell in sentence2.cells:
                                 if cell in sentence1.cells:
@@ -276,6 +278,7 @@ class MinesweeperAI():
                             sentence1.count -= sentence2.count
                             made_change = True
 
+                        # If a change should be made use the temporary set and remove the cells from the correct sentence
                         if made_change:
                             if sentence_to_remove == 1:
                                 for cell in remove_set:
@@ -283,6 +286,7 @@ class MinesweeperAI():
                             else:
                                 for cell in remove_set:
                                     sentence2.cells.remove(cell)
+                    # If a change is made we should check for mines and safes again before checking for new inferences
                     if made_change:
                         break
                 if made_change:
