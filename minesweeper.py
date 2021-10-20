@@ -132,7 +132,7 @@ class Sentence():
         """
         if cell in self.cells:
             self.cells.remove(cell)
-            count -= 1
+            self.count -= 1
 
     def mark_safe(self, cell):
         """
@@ -199,20 +199,21 @@ class MinesweeperAI():
         """
         # Mark the cell as a move that has been made
         self.moves_made.add(cell)
+        print(cell)
 
         # Mark the cell as safe
         self.mark_safe(cell)
 
         # Update all sentences containing given cell
         for sentence in self.knowledge:
-            if cell in sentence:
-                mark_safe(cell)
+            if cell in sentence.cells:
+                self.mark_safe(cell)
         
         # Create new sentence based on the value of cell and count
         up = cell[0] - 1 if cell[0] - 1 > 0 else 0
-        down = cell[0] + 2 if cell[0] + 2 < Minesweeper.height else Minesweeper.height
+        down = cell[0] + 2 if cell[0] + 2 < self.height else self.height
         left = cell[1] - 1 if cell[1] - 1 > 0 else 0
-        right = cell[1] + 2 if cell[1] + 2 < Minesweeper.width else Minesweeper.width
+        right = cell[1] + 2 if cell[1] + 2 < self.width else self.width
 
         neighbors = set()
 
@@ -221,13 +222,89 @@ class MinesweeperAI():
             for j in range(left, right):
                 if (i, j) not in self.safes and (i, j) not in self.mines:
                     neighbors.add((i, j))
+                if (i, j) in self.mines:
+                    count -= 1
         
-        self.knowledge.append(Sentence(neighbors, count))
+        if len(neighbors) != 0:
+            self.knowledge.append(Sentence(neighbors, count))
 
-        for sentence in self.knowledge:
-            
+        # If a change is made in the knowledge, it may be possible to draw new inferences
+        made_change = True
+        while made_change == True:
+            made_change = False
+
+            # Check for mines and safes
+            # Can't modify sentences.cells set during iteration so we use a temporary set
+            mines_or_safes = 0
+            for sentence in self.knowledge:
+                cells_to_change = set()
+                if sentence.count == len(sentence.cells):
+                    for cell in sentence.cells:
+                        mines_or_safes = 0
+                        cells_to_change.add(cell)
+                elif sentence.count == 0:
+                    for cell in sentence.cells:
+                        mines_or_safes = 1
+                        cells_to_change.add(cell)
                 
+                if mines_or_safes == 0:
+                    for cell in cells_to_change:
+                        self.mark_mine(cell)
+                else:
+                    for cell in cells_to_change:
+                        self.mark_safe(cell)
 
+            for sentence in self.knowledge:
+                if sentence.count != 0:
+                    print("Sentence: ", sentence.cells, " = ", sentence.count)
+
+            # Check if any new sentences can be inferred 
+            # For every possible sentence in knowledge...
+            for sentence1 in self.knowledge:
+                # ...compare with every sentence in knowledge...
+                for sentence2 in self.knowledge:
+                    # ...that isn't itself
+                    if sentence1.cells != sentence2.cells and len(sentence1.cells) != 0 and len(sentence2.cells) != 0:
+                        remove_set = set()
+                        if sentence1.cells.issubset(sentence2.cells):
+                            print("Before")
+                            print("Set1: ", sentence1.cells, " = ", sentence1.count)
+                            print("Set2: ", sentence2.cells, " = ", sentence2.count)
+                            for cell in sentence2.cells:
+                                if cell in sentence1.cells:
+                                    remove_set.add(cell)
+                                    sentence_to_remove = 2
+                            sentence2.count -= sentence1.count
+                            made_change = True 
+                        elif sentence2.cells.issubset(sentence1.cells):
+                            print("Before")
+                            print("Set1: ", sentence1.cells, " = ", sentence1.count)
+                            print("Set2: ", sentence2.cells, " = ", sentence2.count)
+                            for cell in sentence1.cells:
+                                if cell in sentence2.cells:
+                                    remove_set.add(cell)
+                                    sentence_to_remove = 1
+                            sentence1.count -= sentence2.count
+                            made_change = True
+
+                        if made_change:
+                            if sentence_to_remove == 1:
+                                for cell in remove_set:
+                                    sentence1.cells.remove(cell)
+                            else:
+                                for cell in remove_set:
+                                    sentence2.cells.remove(cell)
+                            print('After')
+                            print("Set1: ", sentence1.cells, " = ", sentence1.count)
+                            print("Set2: ", sentence2.cells, " = ", sentence2.count)
+                    if made_change:
+                        break
+                if made_change:
+                    break
+                             
+        print("Safes: ", self.safes - self.moves_made)
+        print("Mines: ", self.mines)
+        
     def make_safe_move(self):
         """
         Returns a safe cell to choose on the Minesweeper board.
@@ -250,11 +327,15 @@ class MinesweeperAI():
             1) have not already been chosen, and
             2) are not known to be mines
         """
-        random = set()
+        random_set = set()
 
         for i in range(self.width):
             for j in range(self.height):
                 if (i, j) not in self.moves_made and (i, j) not in self.mines:
-                    random.add((i, j))
+                    random_set.add((i, j))
+        if len(random_set) == 0:
+            return None
 
-        return random.choice(random) 
+        random_index = random.randrange(len(random_set))
+        random_list = list(random_set)
+        return random_list[random_index]
