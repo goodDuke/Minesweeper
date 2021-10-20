@@ -199,7 +199,6 @@ class MinesweeperAI():
         """
         # Mark the cell as a move that has been made
         self.moves_made.add(cell)
-        print(cell)
 
         # Mark the cell as safe
         self.mark_safe(cell)
@@ -254,10 +253,6 @@ class MinesweeperAI():
                     for cell in cells_to_change:
                         self.mark_safe(cell)
 
-            for sentence in self.knowledge:
-                if sentence.count != 0:
-                    print("Sentence: ", sentence.cells, " = ", sentence.count)
-
             # Check if any new sentences can be inferred 
             # For every possible sentence in knowledge...
             for sentence1 in self.knowledge:
@@ -267,9 +262,6 @@ class MinesweeperAI():
                     if sentence1.cells != sentence2.cells and len(sentence1.cells) != 0 and len(sentence2.cells) != 0:
                         remove_set = set()
                         if sentence1.cells.issubset(sentence2.cells):
-                            print("Before")
-                            print("Set1: ", sentence1.cells, " = ", sentence1.count)
-                            print("Set2: ", sentence2.cells, " = ", sentence2.count)
                             for cell in sentence2.cells:
                                 if cell in sentence1.cells:
                                     remove_set.add(cell)
@@ -277,9 +269,6 @@ class MinesweeperAI():
                             sentence2.count -= sentence1.count
                             made_change = True 
                         elif sentence2.cells.issubset(sentence1.cells):
-                            print("Before")
-                            print("Set1: ", sentence1.cells, " = ", sentence1.count)
-                            print("Set2: ", sentence2.cells, " = ", sentence2.count)
                             for cell in sentence1.cells:
                                 if cell in sentence2.cells:
                                     remove_set.add(cell)
@@ -294,16 +283,10 @@ class MinesweeperAI():
                             else:
                                 for cell in remove_set:
                                     sentence2.cells.remove(cell)
-                            print('After')
-                            print("Set1: ", sentence1.cells, " = ", sentence1.count)
-                            print("Set2: ", sentence2.cells, " = ", sentence2.count)
                     if made_change:
                         break
                 if made_change:
                     break
-                             
-        print("Safes: ", self.safes - self.moves_made)
-        print("Mines: ", self.mines)
         
     def make_safe_move(self):
         """
